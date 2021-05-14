@@ -82,12 +82,12 @@ int main(int argc, char **argv)
                                 SDL_DestroyRenderer(renderer);
                                 SDL_DestroyWindow(window);
                                 SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, 0, &window, &renderer);
-                                if(data.fileList.at(i)->fileNameString == ".."){
-                                    //checks if the directory is the parent directory
-                                    std::cout << "FOUND THE FUCKER" << std::endl;
+                                /*if(data.fileList.at(i)->fileNameString == ".."){
+                                    //checks if the directory is the parent director
+
                                     data.fileList.at(i)->path = data.fileList.at(i)->path + "/..";
                                     std::cout << data.fileList.at(i)->path << std::endl;
-                                }
+                                }*/
                                 
                                 
                                 renderDirectory(renderer, data.fileList.at(i)->path.c_str(), &data);
