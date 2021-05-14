@@ -69,7 +69,7 @@ int main(int argc, char **argv)
         switch(event.type) 
         {
             
-    
+            
 
 
 
@@ -133,19 +133,24 @@ void renderDirectory(SDL_Renderer *renderer, std::string directory, AppData *dat
     }
 
     std::sort(fileList.begin(), fileList.end());
+    fileList.erase(fileList.begin());
+
 
     for (int i = 0; i < fileList.size(); i++) {
         fileData *file = new fileData();
+        std::string filePath = directory + "/" + fileList.at(i);
+        std::cout << filePath << std::endl;
+        file->fileType = getFileType(filePath);
         file->iconIndex = 0;
-        file->iconRect.x = 25;
+        file->iconRect.x = 10;
         file->iconRect.y = 25 + (i * 25);
-        file->iconRect.w = 16;
-        file->iconRect.h = 16;
+        file->iconRect.w = 25;
+        file->iconRect.h = 25;
         SDL_Color color = { 0, 0, 0 };
         SDL_Surface *phrase_surf = TTF_RenderText_Solid(data_ptr->font, fileList.at(i).c_str(), color);
         file->fileName = SDL_CreateTextureFromSurface(renderer, phrase_surf);
         SDL_FreeSurface(phrase_surf);
-        file->fileNameRect.x = 100;
+        file->fileNameRect.x = 50;
         file->fileNameRect.y = 25 + (i * 25);
         SDL_QueryTexture(file->fileName, NULL, NULL, &(file->fileNameRect.w), &(file->fileNameRect.h));
 
@@ -159,7 +164,7 @@ void renderDirectory(SDL_Renderer *renderer, std::string directory, AppData *dat
             img_surf = IMG_Load("resrc/exe-extension.png");
         } else if (file->fileType == "directory") {
             std::cout << "dir" << std::endl;
-            img_surf = IMG_Load("resrc/directory-extension.png");
+            img_surf = IMG_Load("resrc/directory-extension.webp");
         } else if (file->fileType == "image") {
             std::cout << "img" << std::endl;
             img_surf = IMG_Load("resrc/img-extension.png");
@@ -176,11 +181,11 @@ void renderDirectory(SDL_Renderer *renderer, std::string directory, AppData *dat
 
         file->iconTexture = SDL_CreateTextureFromSurface(renderer, img_surf);
         SDL_FreeSurface(img_surf);
-        SDL_QueryTexture(file->iconTexture, NULL, NULL, &(file->iconRect.w), &(file->iconRect.h));
+        //SDL_QueryTexture(file->iconTexture, NULL, NULL, &(file->iconRect.w), &(file->iconRect.h));
         data_ptr->fileList.push_back(file);
 
     }
-    
+
 
     
 }
@@ -196,9 +201,15 @@ void quit(AppData *data_ptr) {
 // returns the file's type in the form of a string
 
 std::string getFileType(std::string file) {
-    std::vector<std::string> imgExtensions = {".jpg", ",jpeg", ".png", ".tif", ".tiff", ".gif"};
+    std::vector<std::string> imgExtensions = {".jpg", ",jpeg", ".png", ".tif", ".tiff", ".gif", ".webp"};
     std::vector<std::string> videoExtensions = {".mp4", ".mov", ".mkv", ".avi", ".webm"};
     std::vector<std::string> codeExtensions = {".h", ".c", ".cpp", ".py", ".java", ".js"};
+    const std::filesystem::path path(file);
+
+
+    if (std::filesystem::is_directory(path)) {
+        return "directory";
+    }
 
     for (int i = 0; i < imgExtensions.size(); i++) {
         std::size_t match = file.find(imgExtensions[i]);
