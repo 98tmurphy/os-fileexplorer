@@ -10,6 +10,9 @@
 #include <string>
 #include <cstring>
 #include <sys/stat.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <thread>
 
 
 #define WIDTH 800
@@ -85,13 +88,16 @@ int main(int argc, char **argv)
                                 std::cout << data.fileList.at(i)->path << std::endl;
                                 renderDirectory(renderer, data.fileList.at(i)->path.c_str(), &data);
                                 render(renderer, &data);
-                                break;
                             }
-                            else if(getFileType(data.fileList.at(i)->path) == "executable"){
-
-                            }
-                            else if(getFileType(data.fileList.at(i)->path) == "image"){
-                                
+                            else{
+                                int pid = fork();
+                                if(pid == 0){
+                                   //const char* arg = "xdg-open";
+                                   //execl(data.fileList.at(i)->path.c_str(),arg);
+                                   std::string command = "xdg-open '" + data.fileList.at(i)->path + "'";
+                                   std::cout << system(command.c_str()) << std::endl;
+                                   std::terminate();
+                                }
                             }
                         }
                 }
