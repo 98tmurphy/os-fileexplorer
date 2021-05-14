@@ -82,17 +82,16 @@ int main(int argc, char **argv)
                                 SDL_DestroyRenderer(renderer);
                                 SDL_DestroyWindow(window);
                                 SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, 0, &window, &renderer);
-                                /*if(data.fileList.at(i)->fileNameString == ".."){
-                                    //checks if the directory is the parent director
-
-                                    data.fileList.at(i)->path = data.fileList.at(i)->path + "/..";
-                                    std::cout << data.fileList.at(i)->path << std::endl;
-                                }*/
-                                
-                                
+                                std::cout << data.fileList.at(i)->path << std::endl;
                                 renderDirectory(renderer, data.fileList.at(i)->path.c_str(), &data);
                                 render(renderer, &data);
                                 break;
+                            }
+                            else if(getFileType(data.fileList.at(i)->path) == "executable"){
+
+                            }
+                            else if(getFileType(data.fileList.at(i)->path) == "image"){
+                                
                             }
                         }
                 }
@@ -110,7 +109,7 @@ int main(int argc, char **argv)
 void initialize(SDL_Renderer *renderer, AppData *data_ptr) // , AppData *data_ptr
 {
     // set color of background when erasing frame
-    data_ptr->font = TTF_OpenFont("resrc/OpenSans-Regular.ttf", 12);
+    data_ptr->font = TTF_OpenFont("resrc/OpenSans-Regular.ttf", 16);
     std::cout << getenv("HOME") << std::endl;
     renderDirectory(renderer, getenv("HOME"), data_ptr);
 
@@ -145,6 +144,7 @@ void renderDirectory(SDL_Renderer *renderer, std::string directory, AppData *dat
     DIR* dir = opendir(directory.c_str());
     std::vector<std::string> fileList;
     struct dirent* fileEntry;
+    data_ptr->fileList.clear();
     while((fileEntry = readdir(dir)) != NULL) {
         fileList.push_back(fileEntry->d_name);
     }
@@ -157,7 +157,7 @@ void renderDirectory(SDL_Renderer *renderer, std::string directory, AppData *dat
     for (int i = 0; i < fileList.size(); i++) {
         fileData *file = new fileData();
         std::string filePath = directory + "/" + fileList.at(i);
-        std::cout << filePath << std::endl;
+        //std::cout << filePath << std::endl;
         file->path = filePath;
         file->fileNameString = fileList.at(i);
 
