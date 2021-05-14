@@ -111,7 +111,8 @@ void render(SDL_Renderer *renderer, AppData *data_ptr) // , AppData *data_ptr
 
     for (int i = 0; i < data_ptr->fileList.size(); i++) {
         SDL_SetRenderDrawColor(renderer, 235, 0, 255, 255);
-        SDL_RenderFillRect(renderer, &(data_ptr->fileList.at(i)->iconRect));
+        //SDL_RenderFillRect(renderer, &(data_ptr->fileList.at(i)->iconRect));
+        SDL_RenderCopy(renderer, data_ptr->fileList.at(i)->iconTexture, NULL, &(data_ptr->fileList.at(i)->iconRect));
         SDL_RenderCopy(renderer, data_ptr->fileList.at(i)->fileName, NULL, &(data_ptr->fileList.at(i)->fileNameRect));
  
     }
@@ -150,6 +151,8 @@ void renderDirectory(SDL_Renderer *renderer, std::string directory, AppData *dat
 
 
         SDL_Surface *img_surf;
+        //img_surf = IMG_Load("resrc/exe-extension.png");
+
 
         if (file->fileType == "executable") {
             std::cout << "exe" << std::endl;
