@@ -21,6 +21,8 @@ typedef struct fileData {
     SDL_Rect iconRect;
     SDL_Texture* fileName;
     SDL_Rect fileNameRect;
+    std::string fileType;
+    SDL_Texture* iconTexture;
 } fileData;
 
 
@@ -29,10 +31,6 @@ typedef struct AppData {
     std::vector<fileData*> fileList;
     TTF_Font *font;
     SDL_Texture* icons[6];
-
-
-
-
 } AppData;
 
 
@@ -40,6 +38,7 @@ void initialize(SDL_Renderer *renderer, AppData *data_ptr); //, AppData *data_pt
 void render(SDL_Renderer *renderer, AppData *data_ptr); // , AppData *data_ptr
 void renderDirectory(SDL_Renderer *renderer, std::string directory, AppData *data_ptr);
 void quit(AppData *data_ptr);
+std::string getFileType(std::string file);
 
 int main(int argc, char **argv)
 {
@@ -69,6 +68,16 @@ int main(int argc, char **argv)
         SDL_WaitEvent(&event);
         switch(event.type) 
         {
+            
+    
+
+
+
+
+
+
+
+
 
         }
     }
@@ -101,7 +110,7 @@ void render(SDL_Renderer *renderer, AppData *data_ptr) // , AppData *data_ptr
     // TODO: draw!
 
     for (int i = 0; i < data_ptr->fileList.size(); i++) {
-        SDL_SetRenderDrawColor(renderer, 235, 0, 0, 255);
+        SDL_SetRenderDrawColor(renderer, 235, 0, 255, 255);
         SDL_RenderFillRect(renderer, &(data_ptr->fileList.at(i)->iconRect));
         SDL_RenderCopy(renderer, data_ptr->fileList.at(i)->fileName, NULL, &(data_ptr->fileList.at(i)->fileNameRect));
  
@@ -138,7 +147,35 @@ void renderDirectory(SDL_Renderer *renderer, std::string directory, AppData *dat
         file->fileNameRect.x = 100;
         file->fileNameRect.y = 25 + (i * 25);
         SDL_QueryTexture(file->fileName, NULL, NULL, &(file->fileNameRect.w), &(file->fileNameRect.h));
+
+
+        SDL_Surface *img_surf;
+
+        if (file->fileType == "executable") {
+            std::cout << "exe" << std::endl;
+            img_surf = IMG_Load("resrc/exe-extension.png");
+        } else if (file->fileType == "directory") {
+            std::cout << "dir" << std::endl;
+            img_surf = IMG_Load("resrc/directory-extension.png");
+        } else if (file->fileType == "image") {
+            std::cout << "img" << std::endl;
+            img_surf = IMG_Load("resrc/img-extension.png");
+        } else if (file->fileType == "video") {
+            std::cout << "vid" << std::endl;
+            img_surf = IMG_Load("resrc/video-extension.png");
+        } else if (file->fileType == "other") {
+            std::cout << "other" << std::endl;
+            img_surf = IMG_Load("resrc/other-extension.png");
+        } else if (file->fileType == "code") {
+            std::cout << "code" << std::endl;
+            img_surf = IMG_Load("resrc/code-extension.png");
+        }
+
+        file->iconTexture = SDL_CreateTextureFromSurface(renderer, img_surf);
+        SDL_FreeSurface(img_surf);
+        SDL_QueryTexture(file->iconTexture, NULL, NULL, &(file->iconRect.w), &(file->iconRect.h));
         data_ptr->fileList.push_back(file);
+
     }
     
 
@@ -150,6 +187,42 @@ void quit(AppData *data_ptr) {
     //SDL_DestroyTexture(data_ptr->)
     //SDL_DestroyTexture(data_ptr->)
     //TTF_CloseFont(data_ptr->font);
+
+}
+
+// returns the file's type in the form of a string
+
+std::string getFileType(std::string file) {
+    std::vector<std::string> imgExtensions = {".jpg", ",jpeg", ".png", ".tif", ".tiff", ".gif"};
+    std::vector<std::string> videoExtensions = {".mp4", ".mov", ".mkv", ".avi", ".webm"};
+    std::vector<std::string> codeExtensions = {".h", ".c", ".cpp", ".py", ".java", ".js"};
+
+    for (int i = 0; i < imgExtensions.size(); i++) {
+        std::size_t match = file.find(imgExtensions[i]);
+        if (match != std::string::npos) {
+            return "image";
+        }
+    }
+
+    for (int i = 0; i < videoExtensions.size(); i++) {
+        std::size_t match = file.find(videoExtensions[i]);
+        if (match != std::string::npos) {
+            return "video";
+        }
+    }
+
+    for (int i = 0; i < codeExtensions.size(); i++) {
+        std::size_t match = file.find(codeExtensions[i]);
+        if (match != std::string::npos) {
+            return "code";
+        }
+    }
+
+    return "other";
+
+    
+
+
 
 }
 
