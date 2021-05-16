@@ -57,6 +57,7 @@ void renderDirectory(SDL_Renderer *renderer, std::string directory, AppData *dat
 void renderButtons(SDL_Renderer* renderer, AppData* data_ptr);
 void quit(AppData *data_ptr);
 std::string getFileType(std::string file);
+char* getPermissions(char *file);
 
 int main(int argc, char **argv)
 {
@@ -112,7 +113,7 @@ int main(int argc, char **argv)
                                    //execl(data.fileList.at(i)->path.c_str(),arg);
                                    std::string command = "xdg-open '" + data.fileList.at(i)->path + "'";
                                    std::cout << system(command.c_str()) << std::endl;
-                                   std::terminate();
+                                   return 0;
                                 }
                             }
                         }
@@ -164,7 +165,7 @@ int main(int argc, char **argv)
 void initialize(SDL_Renderer *renderer, AppData *data_ptr) // , AppData *data_ptr
 {
     // set color of background when erasing frame
-    data_ptr->font = TTF_OpenFont("resrc/OpenSans-Regular.ttf", 16);
+    data_ptr->font = TTF_OpenFont("resrc/Anonymous.ttf", 16);
     std::cout << getenv("HOME") << std::endl;
     renderDirectory(renderer, getenv("HOME"), data_ptr);
     renderButtons(renderer, data_ptr);
@@ -214,29 +215,21 @@ void renderDirectory(SDL_Renderer *renderer, std::string directory, AppData *dat
 
     int currTopIndex = data_ptr->currPage * MAX_LINES;
     int currBottomIndex = currTopIndex + MAX_LINES;
+
     for (int i = currTopIndex; i < currBottomIndex && i < fileList.size(); i++) {
         fileData *file = new fileData();
         std::string filePath = directory + "/" + fileList.at(i);
-        //std::cout << filePath << std::endl;
-        file->path = filePath;
+        int spacesToAdd = 30 - fileList.at(i).length();
+        
+        //std::cout << spacesToAdd << std::endl;
 
+        file->path = filePath;
         file->fileType = getFileType(filePath);
         file->iconRect.x = 10;
         file->iconRect.y = 15 + ((i-currTopIndex + 1) * 25);
         file->iconRect.w = 25;
         file->iconRect.h = 25;
         SDL_Color color = { 0, 0, 0 };
-
-        SDL_Surface *phrase_surf = TTF_RenderText_Solid(data_ptr->font, fileList.at(i).c_str(), color);
-        file->fileName = SDL_CreateTextureFromSurface(renderer, phrase_surf);
-        SDL_FreeSurface(phrase_surf);
-        file->fileNameRect.x = 50;
-        file->fileNameRect.y = 15 + ((i-currTopIndex + 1) * 25);
-        file->fileNameRect.h = 25;
-        SDL_QueryTexture(file->fileName, NULL, NULL, &(file->fileNameRect.w), &(file->fileNameRect.h));
-
-        
-        
         SDL_Surface *img_surf;
         //img_surf = IMG_Load("resrc/exe-extension.png");
 
@@ -260,30 +253,40 @@ void renderDirectory(SDL_Renderer *renderer, std::string directory, AppData *dat
             img_surf = IMG_Load("resrc/code-extension.png");
         }
 
+        for(int j = 0; j < spacesToAdd; j++){
+            fileList.at(i).append(" ");
+        }
+
         if(file->fileType != "directory"){
             double fileSizeBits = (double)std::filesystem::file_size(filePath);
             std::string adjustedFileSize;
             if(fileSizeBits < 1024){
-                adjustedFileSize = std::to_string(fileSizeBits) + " B";
+                fileList.at(i).append(std::to_string(fileSizeBits) + " B");
             }else if (fileSizeBits >= 1024 && fileSizeBits < 1048576){
-                adjustedFileSize = std::to_string(fileSizeBits/1024) + " KiB";
+                fileList.at(i).append(std::to_string(fileSizeBits/1024) + " KiB");
             }else if( fileSizeBits >= 1048576 && fileSizeBits < 1073741824){
-                adjustedFileSize = std::to_string(fileSizeBits/1048576) + " MiB";
+                fileList.at(i).append(std::to_string(fileSizeBits/1048576) + " MiB");
             }else{
-                adjustedFileSize = std::to_string(fileSizeBits/1073741824) + " GiB";
+                fileList.at(i).append(std::to_string(fileSizeBits/1073741824) + " GiB");
             }
-
-            SDL_Surface *sizeSurf = TTF_RenderText_Solid(data_ptr->font, adjustedFileSize.c_str(), color);
-            file->fileSizeText = SDL_CreateTextureFromSurface(renderer, sizeSurf);
-            SDL_FreeSurface(sizeSurf);
-            file->fileSizeRect.x = 300;
-            file->fileSizeRect.y = 15 + ((i-currTopIndex + 1) * 25);
-            file->fileSizeRect.w = 100;
-            file->fileSizeRect.h = 24;
-            SDL_QueryTexture(file->fileName, NULL, NULL, &(file->fileSizeRect.w), &(file->fileSizeRect.h));
 
 
         }
+        spacesToAdd = 46 - fileList.at(i).length();
+        for(int j = 0; j < spacesToAdd; j++){
+            fileList.at(i).append(" ");
+        }
+        fileList.at(i).append(getPermissions((char*)filePath.c_str()));
+
+
+        SDL_Surface *phrase_surf = TTF_RenderText_Solid(data_ptr->font, fileList.at(i).c_str(), color);
+        file->fileName = SDL_CreateTextureFromSurface(renderer, phrase_surf);
+        SDL_FreeSurface(phrase_surf);
+        file->fileNameRect.x = 50;
+        file->fileNameRect.y = 23 + ((i-currTopIndex + 1) * 25);
+        file->fileNameRect.h = 25;
+        SDL_QueryTexture(file->fileName, NULL, NULL, &(file->fileNameRect.w), &(file->fileNameRect.h));
+
 
         file->iconTexture = SDL_CreateTextureFromSurface(renderer, img_surf);
         SDL_FreeSurface(img_surf);
@@ -303,8 +306,8 @@ void renderButtons(SDL_Renderer* renderer, AppData* data_ptr){
     SDL_Surface *nextSurf = TTF_RenderText_Solid(data_ptr->font, "NEXT", nextColor);
     data_ptr->nextPageText = SDL_CreateTextureFromSurface(renderer, nextSurf);
     SDL_FreeSurface(nextSurf);
-    data_ptr->nextPageRect.x = WIDTH - 40;
-    data_ptr->nextPageRect.y = HEIGHT - 25;
+    data_ptr->nextPageRect.x = WIDTH - 45;
+    data_ptr->nextPageRect.y = HEIGHT - 20;
 
     SDL_QueryTexture(data_ptr->nextPageText, NULL, NULL, &(data_ptr->nextPageRect.w), &(data_ptr->nextPageRect.h));
 
@@ -320,7 +323,7 @@ void renderButtons(SDL_Renderer* renderer, AppData* data_ptr){
     data_ptr->prevPageRect.x = 10;
     data_ptr->prevPageRect.y = HEIGHT - 25;
     data_ptr->prevPageRect.w = 400;
-    data_ptr->prevPageRect.h = 25;
+    data_ptr->prevPageRect.h = 20;
     SDL_QueryTexture(data_ptr->prevPageText, NULL, NULL, &(data_ptr->prevPageRect.w), &(data_ptr->prevPageRect.h));
 
 
@@ -374,4 +377,26 @@ std::string getFileType(std::string file) {
 
 
 
+}
+char* getPermissions(char *file){
+    struct stat st;
+    char *modeval;
+    modeval = (char*)malloc(sizeof(char) * 9 + 1);
+    if(stat(file, &st) == 0){
+        mode_t perm = st.st_mode;
+        modeval[0] = (perm & S_IRUSR) ? 'r' : '-';
+        modeval[1] = (perm & S_IWUSR) ? 'w' : '-';
+        modeval[2] = (perm & S_IXUSR) ? 'x' : '-';
+        modeval[3] = (perm & S_IRGRP) ? 'r' : '-';
+        modeval[4] = (perm & S_IWGRP) ? 'w' : '-';
+        modeval[5] = (perm & S_IXGRP) ? 'x' : '-';
+        modeval[6] = (perm & S_IROTH) ? 'r' : '-';
+        modeval[7] = (perm & S_IWOTH) ? 'w' : '-';
+        modeval[8] = (perm & S_IXOTH) ? 'x' : '-';
+        modeval[9] = '\0';
+        return modeval;     
+    }
+    else{
+        return strerror(errno);
+    }   
 }
