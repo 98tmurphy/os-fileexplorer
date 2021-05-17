@@ -43,11 +43,14 @@ typedef struct AppData {
     SDL_Rect nextPageRect;
     SDL_Rect prevPageRect;
     SDL_Rect currPageRect;
+    SDL_Rect recursiveRect;
     SDL_Texture* nextPageText;
     SDL_Texture* prevPageText;
     SDL_Texture* currPageText;
+    SDL_Texture* recursiveText;
     int currPage = 0;
     std::string currDirectoryPath;
+    bool recursive = false;
 } AppData;
 
 
@@ -55,6 +58,7 @@ void initialize(SDL_Renderer *renderer, AppData *data_ptr); //, AppData *data_pt
 void render(SDL_Renderer *renderer, AppData *data_ptr); // , AppData *data_ptr
 void renderDirectory(SDL_Renderer *renderer, std::string directory, AppData *data_ptr);
 void renderButtons(SDL_Renderer* renderer, AppData* data_ptr);
+int renderRecursiveDirectories(SDL_Renderer *renderer, std::string directory, AppData *data_ptr, int index, int offset);
 void quit(AppData *data_ptr);
 std::string getFileType(std::string file);
 char* getPermissions(char *file);
@@ -150,6 +154,25 @@ int main(int argc, char **argv)
                         render(renderer, &data);
 
                 }
+                if (event.button.button == SDL_BUTTON_LEFT &&
+                    event.button.y >= data.recursiveRect.y &&
+                    event.button.y <= data.recursiveRect.y + data.recursiveRect.h &&
+                    event.button.x >= data.recursiveRect.x &&
+                    event.button.x <= data.recursiveRect.x + data.recursiveRect.w){
+
+                        if(data.recursive == true){
+                            data.recursive = false;
+                        }else{
+                            data.recursive = true;
+                        }
+                        SDL_DestroyRenderer(renderer);
+                        SDL_DestroyWindow(window);
+                        SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, 0, &window, &renderer);
+                        renderDirectory(renderer, data.currDirectoryPath, &data);
+                        renderButtons(renderer, &data);
+                        render(renderer, &data);
+
+                    }
                 
         }
     }
@@ -194,6 +217,7 @@ void render(SDL_Renderer *renderer, AppData *data_ptr) // , AppData *data_ptr
     
     SDL_RenderCopy(renderer, data_ptr->nextPageText, NULL, &(data_ptr->nextPageRect));
     SDL_RenderCopy(renderer, data_ptr->prevPageText, NULL, &(data_ptr->prevPageRect));
+    SDL_RenderCopy(renderer, data_ptr->recursiveText, NULL, &(data_ptr->recursiveRect));
 
     // show rendered frame
     SDL_RenderPresent(renderer);
@@ -216,17 +240,19 @@ void renderDirectory(SDL_Renderer *renderer, std::string directory, AppData *dat
     int currTopIndex = data_ptr->currPage * MAX_LINES;
     int currBottomIndex = currTopIndex + MAX_LINES;
 
-    for (int i = currTopIndex; i < currBottomIndex && i < fileList.size(); i++) {
+
+    int currLine = 0;
+    for (int i = currTopIndex, currLine = 0; currLine < currBottomIndex && i < fileList.size(); i++, currLine++) {
         fileData *file = new fileData();
         std::string filePath = directory + "/" + fileList.at(i);
-        int spacesToAdd = 30 - fileList.at(i).length();
+        int spacesToAdd = 45 - fileList.at(i).length();
         
         //std::cout << spacesToAdd << std::endl;
 
         file->path = filePath;
         file->fileType = getFileType(filePath);
         file->iconRect.x = 10;
-        file->iconRect.y = 15 + ((i-currTopIndex + 1) * 25);
+        file->iconRect.y = 15 + ((currLine+ 1) * 25);
         file->iconRect.w = 25;
         file->iconRect.h = 25;
         SDL_Color color = { 0, 0, 0 };
@@ -270,27 +296,33 @@ void renderDirectory(SDL_Renderer *renderer, std::string directory, AppData *dat
                 fileList.at(i).append(std::to_string(fileSizeBits/1073741824) + " GiB");
             }
 
-
-        }
-        spacesToAdd = 46 - fileList.at(i).length();
-        for(int j = 0; j < spacesToAdd; j++){
-            fileList.at(i).append(" ");
-        }
+            spacesToAdd = 59 - fileList.at(i).length();
+            for(int j = 0; j < spacesToAdd; j++){
+                fileList.at(i).append(" ");
+            }
         fileList.at(i).append(getPermissions((char*)filePath.c_str()));
-
+           
+        }
+             
 
         SDL_Surface *phrase_surf = TTF_RenderText_Solid(data_ptr->font, fileList.at(i).c_str(), color);
         file->fileName = SDL_CreateTextureFromSurface(renderer, phrase_surf);
         SDL_FreeSurface(phrase_surf);
         file->fileNameRect.x = 50;
-        file->fileNameRect.y = 23 + ((i-currTopIndex + 1) * 25);
+        file->fileNameRect.y = 23 + ((currLine + 1) * 25);
         file->fileNameRect.h = 25;
         SDL_QueryTexture(file->fileName, NULL, NULL, &(file->fileNameRect.w), &(file->fileNameRect.h));
+
+        if(data_ptr->recursive == true && file->fileType == "directory" && i != 0){
+            //this adds the recursive nonsense
+            //currLine = renderRecursiveDirectories(renderer, filePath, data_ptr, currTopIndex + currLine + 1, 1);
+        }
 
 
         file->iconTexture = SDL_CreateTextureFromSurface(renderer, img_surf);
         SDL_FreeSurface(img_surf);
         data_ptr->fileList.push_back(file);
+        std::cout<< i << std::endl;
 
     }
 
@@ -326,7 +358,53 @@ void renderButtons(SDL_Renderer* renderer, AppData* data_ptr){
     data_ptr->prevPageRect.h = 20;
     SDL_QueryTexture(data_ptr->prevPageText, NULL, NULL, &(data_ptr->prevPageRect.w), &(data_ptr->prevPageRect.h));
 
+    SDL_Color recColor;
+    if(data_ptr->recursive == true ){
+        recColor = {255, 0, 255};
+    }else{
+        recColor = {150, 150, 150};
+    }
+    SDL_Surface *recSurface = TTF_RenderText_Solid(data_ptr->font, "RECURSIVE", recColor);
+    data_ptr->recursiveText = SDL_CreateTextureFromSurface(renderer, recSurface);
+    SDL_FreeSurface(recSurface);
+    data_ptr->recursiveRect.x = 350;
+    data_ptr->recursiveRect.y = 2;
+    data_ptr->recursiveRect.h = 20;
+    data_ptr->recursiveRect.w = 400;
+    SDL_QueryTexture(data_ptr->recursiveText, NULL, NULL, &(data_ptr->recursiveRect.w), &(data_ptr->recursiveRect.h));
+}
+int renderRecursiveDirectories(SDL_Renderer *renderer, std::string directory, AppData *data_ptr, int index, int offset){
+    DIR* dir = opendir(directory.c_str());
+    std::vector<std::string> fileList;
+    struct dirent* fileEntry;
 
+    while((fileEntry = readdir(dir)) != NULL) {
+        fileList.push_back(fileEntry->d_name);
+    }
+
+    std::sort(fileList.begin(), fileList.end());
+    fileList.erase(fileList.begin());
+    fileList.erase(fileList.begin());
+
+    int initialIndex = index;
+    int currLine = 0;
+    for(int i = 0 ;index < MAX_LINES && i < fileList.size(); index++, i++, currLine++){
+        fileData *file = new fileData();
+        std::string filePath = directory + "/" + fileList.at(i);
+        SDL_Color color = {0, 0, 0};
+        SDL_Surface *phrase_surf = TTF_RenderText_Solid(data_ptr->font, fileList.at(i).c_str(), color);
+        file->fileName = SDL_CreateTextureFromSurface(renderer, phrase_surf);
+        SDL_FreeSurface(phrase_surf);
+        file->fileNameRect.x = 100 * offset;
+        file->fileNameRect.y = 23 + ((currLine + initialIndex + 1) * 25);
+        file->fileNameRect.h = 25;
+        SDL_QueryTexture(file->fileName, NULL, NULL, &(file->fileNameRect.w), &(file->fileNameRect.h));
+
+
+        data_ptr->fileList.push_back(file);
+    }
+    //std::cout << index << std::endl;
+    return index;
 }
 
 void quit(AppData *data_ptr) {
